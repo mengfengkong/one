@@ -1,17 +1,17 @@
 package main
 
 import (
-	"fmt"
 	"frame"
 )
 
 func main() {
 	f := frame.New()
 	f.Get("/", func(c *frame.Context) {
-		fmt.Println(1)
+		c.Json(200, "hello")
 	})
-	f.Get("/a/:name", func(c *frame.Context) {
-		fmt.Println(c.Params)
+	g := f.Group("/g")
+	g.Get("/a", func(c *frame.Context) {
+		c.Json(200, "/g/a")
 	})
 	f.Run(":8888")
 }

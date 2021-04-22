@@ -6,15 +6,54 @@ import (
 
 type HandlerFunc func(c *Context)
 
+type RouterGroup struct {
+	middlewares []HandlerFunc
+	parent      *RouterGroup
+	prefix      string
+	engine      *Engine
+}
+
 type Engine struct {
 	route *router
+	*RouterGroup
+	groups []*RouterGroup
 }
 
 func New() *Engine {
-	return &Engine{route: newRoute()}
+	engine := &Engine{route: newRoute()}
+	engine.RouterGroup = &RouterGroup{
+		engine: engine,
+	}
+	engine.groups = []*RouterGroup{engine.RouterGroup}
+	return engine
 }
 
-func (e *Engine) addRoutes(method string, pattern string, handler HandlerFunc)  {
+func (group *RouterGroup) Group(prefix string) *RouterGroup {
+	engine := group.engine
+	newGroup := &RouterGroup{
+		parent: group,
+		prefix: group.prefix + prefix,
+		engine: engine,
+	}
+	engine.groups = append(engine.groups, newGroup)
+
+	return newGroup
+}
+
+func (group *RouterGroup) addRoutes(method string, pattern string, handler HandlerFunc) {
+	completePattern := group.prefix + pattern
+	group.engine.route.addRoute(method, completePattern, handler)
+}
+
+func (group *RouterGroup) Get(pattern string, handler HandlerFunc) {
+	group.addRoutes("GET", pattern, handler)
+}
+
+func (group *RouterGroup) Post(pattern string, handler HandlerFunc) {
+	group.addRoutes("POST", pattern, handler)
+}
+
+func (e *Engine) addRoutes(method string, pattern string, handler HandlerFunc) {
 	e.route.addRoute(method, pattern, handler)
 }
 

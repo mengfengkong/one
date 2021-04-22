@@ -55,6 +55,8 @@ func initRouter() *router {
 
 func TestGetRoute(t *testing.T) {
 	r := initRouter()
-	n, params := r.getRoute("get", "/b/mm")
-	fmt.Printf("matched path: %s, params['name']: %s\n", n.pattern, params["name"])
+	_, params := r.getRoute("get", "/b/mm/x")
+	//fmt.Println(n.pattern)
+	fmt.Println(params)
+	//fmt.Printf("matched path: %s, params['name']: %s\n", n.pattern, params["name"])
 }
