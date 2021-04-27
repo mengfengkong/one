@@ -17,6 +17,7 @@ type Context struct {
 	StatusCode int
 	handlers   []HandlerFunc
 	index      int
+	engine     *Engine
 }
 
 func newContext(w http.ResponseWriter, r *http.Request) *Context {
@@ -32,10 +33,9 @@ func newContext(w http.ResponseWriter, r *http.Request) *Context {
 
 func (c *Context) Next() {
 	c.index++
-	length := len(c.handlers)
-	for c.index < length {
+	s := len(c.handlers)
+	for ; c.index < s; c.index++ {
 		c.handlers[c.index](c)
-		c.index++
 	}
 }
 
@@ -85,4 +85,9 @@ func (c *Context) HTML(code int, html string) {
 func (c *Context) Param(key string) string {
 	value, _ := c.Params[key]
 	return value
+}
+
+func (c *Context) Fail(code int, err string) {
+	c.index = len(c.handlers)
+	c.Json(code, H{"message": err})
 }

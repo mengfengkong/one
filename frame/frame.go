@@ -2,6 +2,7 @@ package frame
 
 import (
 	"net/http"
+	"strings"
 )
 
 type HandlerFunc func(c *Context)
@@ -53,6 +54,10 @@ func (group *RouterGroup) Post(pattern string, handler HandlerFunc) {
 	group.addRoutes("POST", pattern, handler)
 }
 
+func (group *RouterGroup) Use(middwares ...HandlerFunc) {
+	group.middlewares = append(group.middlewares, middwares...)
+}
+
 func (e *Engine) addRoutes(method string, pattern string, handler HandlerFunc) {
 	e.route.addRoute(method, pattern, handler)
 }
@@ -65,11 +70,30 @@ func (e *Engine) Post(pattern string, handler HandlerFunc) {
 	e.addRoutes("POST", pattern, handler)
 }
 
+//
+//func (e *Engine) Use(middleware ...HandlerFunc) {
+//	e.middlewares = append(e.middlewares, middleware...)
+//}
+
 func (e *Engine) Run(addr string) error {
 	return http.ListenAndServe(addr, e)
 }
 
 func (e *Engine) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	var middlewares []HandlerFunc
+	for _, group := range e.groups {
+		if strings.HasPrefix(r.URL.Path, group.prefix) {
+			middlewares = append(middlewares, group.middlewares...)
+		}
+	}
 	c := newContext(w, r)
+	c.handlers = middlewares
+	c.engine = e
 	e.route.handle(c)
+}
+
+func Default() *Engine {
+	f := New()
+	f.Use(Logger(), Recovery())
+	return f
 }
