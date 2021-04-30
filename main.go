@@ -1,23 +1,26 @@
 package main
 
 import (
-	"frame"
-	"strconv"
+	"fcache"
+	"fmt"
+	"log"
+	"net/http"
 )
 
+var db = map[string]string{
+	"a": "aa",
+}
+
 func main() {
-	f := frame.Default()
-	f.Get("/bb", func(c *frame.Context) {
-		c.Json(200, "hello")
-	})
-	f.Get("/panic/:name", func(c *frame.Context) {
-		names := []string{"geektutu"}
-		index, _ := strconv.Atoi(c.Param("name"))
-		c.Json(200, names[index])
-	})
-	g := f.Group("/g")
-	g.Get("/a", func(c *frame.Context) {
-		c.Json(200, "/g/a")
-	})
-	f.Run(":8888")
+	fcache.NewGroup("store", 2<<10, fcache.GetterFunc(
+		func(key string) ([]byte, error) {
+			if v, ok := db[key]; ok {
+				return []byte(v), nil
+			}
+
+			return nil, fmt.Errorf("%s not exist", key)
+		}))
+	addr := "localhost:8888"
+	log.Println("f is running at", addr)
+	log.Fatal(http.ListenAndServe(addr, fcache.NewHttpPool(addr)))
 }
